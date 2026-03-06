@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	// RecommendedHomeDir defines the default directory used to place all Operations service configurations.
+	// RecommendedHomeDir defines the default directory used to place all service configurations.
 	RecommendedHomeDir = ".mmos"
 
-	// RecommendedEnvPrefix defines the ENV prefix used by all Operations service.
+	// RecommendedEnvPrefix defines the ENV prefix used by all service.
 	RecommendedEnvPrefix = "Opts"
 )
 
@@ -63,7 +63,7 @@ type InsecureServingInfo struct {
 
 // JwtInfo defines jwt fields used to create jwt authentication middleware.
 type JwtInfo struct {
-	// defaults to "Operations jwt"
+	// defaults to "Service jwt"
 	Realm string
 	// defaults to empty
 	Key string
@@ -82,7 +82,7 @@ func NewConfig() *Config {
 		EnableProfiling: true,
 		EnableMetrics:   true,
 		Jwt: &JwtInfo{
-			Realm:      "operations jwt",
+			Realm:      "service jwt",
 			Timeout:    1 * time.Hour,
 			MaxRefresh: 1 * time.Hour,
 		},
@@ -135,7 +135,7 @@ func LoadConfig(cfg string, defaultName string) {
 	// Use config file from the flag.
 	viper.SetConfigType("yaml")              // set the type of the configuration to yaml.
 	viper.AutomaticEnv()                     // read in environment variables that match.
-	viper.SetEnvPrefix(RecommendedEnvPrefix) // set ENVIRONMENT variables prefix to Operations.
+	viper.SetEnvPrefix(RecommendedEnvPrefix) // set ENVIRONMENT variables prefix to Service.
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 
 	// If a config file is found, read it in.

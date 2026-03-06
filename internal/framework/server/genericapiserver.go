@@ -19,7 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// GenericAPIServer contains state for an Operations api server.
+// GenericAPIServer contains state for a service api server.
 // type GenericAPIServer gin.Engine.
 type GenericAPIServer struct {
 	middlewares []string

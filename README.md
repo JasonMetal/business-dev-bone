@@ -6,7 +6,7 @@
 
 ```
 business-dev-bone/
-├── go.mod                      # replace operations => ../operations，需与 operations 仓库同级
+├── go.mod                      # 模块配置文件
 ├── cmd/server/main.go          # 入口：core.NewApp("app").Run()
 ├── configs/dev/app.yaml        # 开发配置（端口、日志等）
 ├── pkg/                        # pkg包 
@@ -34,11 +34,11 @@ business-dev-bone/
 2. **复制出去当新项目**
    - 复制整个 `business-dev-bone` 目录到新仓库。
    - 把 `cmd/server/main.go` 里 `NewApp("app")` 的 `"app"` 改成你的应用名（同时把 `configs/**/app.yaml` 改成同名 yaml）。
-   - 新项目需能引用原 operations 的 `internal/pkg` 和 `pkg/component-base`（例如通过 go mod replace 指向原仓库，或把依赖的包拷贝到新仓库）。
+   - 新项目需能引用原平台的 `internal/pkg` 和 `pkg/component-base`（例如通过 go mod replace 指向原仓库，或把依赖的包拷贝到新仓库）。
 
 ## 构建与运行
 
-**独立构建**（business-dev-bone 与 operations 为同级目录，如 `mg/operations`、`mg/business-dev-bone`）：
+**独立构建**：
 
 ```bash
 cd business-dev-bone
@@ -49,10 +49,10 @@ go build -o server.exe ./cmd/server
 
 或按环境读配置：`./server.exe -e dev`（读 `configs/dev/app.yaml`）。
 
-**在 operations 仓库内构建**（若 business-dev-bone 放在 operations 下）：
+**在平台仓库内构建**（若 business-dev-bone 放在平台下）：
 
 ```bash
-cd operations
+cd platform
 go build -o business-dev-bone/server.exe ./business-dev-bone/cmd/server
 ```
 

@@ -1,5 +1,5 @@
 // Package verflag defines utility functions to handle command line flags
-// related to version of Operations.
+// related to version of Service.
 package verflag
 
 import (

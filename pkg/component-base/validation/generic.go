@@ -23,7 +23,7 @@ const (
 
 var qualifiedNameRegexp = regexp.MustCompile("^" + qualifiedNameFmt + "$")
 
-// IsQualifiedName tests whether the value passed is what Operations calls a
+// IsQualifiedName tests whether the value passed is what service calls a
 // "qualified name". This is a format used in various places throughout the
 // system. If the value is not valid, a list of error strings is returned.
 // Otherwise an empty list (or nil) is returned.
