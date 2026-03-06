@@ -1,0 +1,29 @@
+# 开发环境示例，-e dev 时自动加载 configs/dev/app.yaml
+# 新项目可改端口、日志等，或复制 configs 为 test/release/prod
+
+server:
+  mode: debug
+  healthz: true
+
+insecure:
+  bind-address: 0.0.0.0
+  bind-port: 8888
+
+secure:
+  bind-port: 0
+  required: false
+
+feature:
+  profiling: true
+  enable-metrics: true
+
+log:
+  name: bone # Logger的名字
+  development: true # 是否是开发模式。如果是开发模式，会对DPanicLevel进行堆栈跟踪。
+  level: debug # 日志级别，优先级从低到高依次为：debug, info, warn, error, dpanic, panic, fatal。
+  format: json # 支持的日志输出格式，目前支持 console 和json两种。console其实就是 text 格式。
+  enable-color: true # 是否开启颜色输出，true:是，false:否
+  disable-caller: false # 是否开启 caller，如果开启会在日志中显示调用日志所在的文件、函数和行号
+  disable-stacktrace: false # 是否再panic及以上级别禁止打印堆栈信息
+  output-paths: ["stdout"]
+  error-output-paths: ["stderr"]

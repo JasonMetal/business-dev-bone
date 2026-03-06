@@ -3,6 +3,5 @@
 _log/
 __debug_*
 .idea
-configs/dev
 *.wasm
 *.exe
