@@ -1,0 +1,8 @@
+.DS_Store
+.vscode/
+_log/
+__debug_*
+.idea
+configs/dev
+*.wasm
+*.exe
