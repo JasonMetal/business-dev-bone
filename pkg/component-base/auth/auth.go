@@ -2,18 +2,17 @@
 package auth
 
 import (
-	"business-dev-bone/api/core/v1/passport"
 	"business-dev-bone/internal/pkg/code"
 	"business-dev-bone/pkg/component-base/core"
 	"business-dev-bone/pkg/component-base/errors"
-	"business-dev-bone/utils"
 	"fmt"
-	"time"
-
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
+
+const JWTHeaderName, Salt = "authorization", "hell"
 
 // Encrypt encrypts the plain text with bcrypt.
 func Encrypt(source string) (string, error) {
@@ -48,7 +47,7 @@ func Sign(secretID string, secretKey string, iss, aud string) string {
 
 func JWTVerify() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.GetHeader(passport.JWTHeaderName)
+		tokenString := c.GetHeader(JWTHeaderName)
 		claims, err := CheckJWT(tokenString)
 		if err != nil {
 			core.WriteResponse(c, err, nil)
@@ -59,9 +58,7 @@ func JWTVerify() gin.HandlerFunc {
 		c.Set("claims", claims)
 		c.Set("uid", claims["uid"])
 		c.Set("rid", claims["rid"])
-		c.Set("appId", claims["appId"])
 		c.Set("userType", claims["userType"])
-		c.Set("realmId", claims["realmId"])
 		c.Next()
 	}
 }
@@ -76,7 +73,7 @@ func CheckJWT(jwtToken string) (jwt.MapClaims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("不支持的签名算法: %v", token.Header["alg"])
 		}
-		return []byte(utils.Salt), nil
+		return []byte(Salt), nil
 	})
 
 	if err != nil || !token.Valid {
