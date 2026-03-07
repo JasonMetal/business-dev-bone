@@ -61,24 +61,6 @@ const (
 
 	// ErrPermissionDenied - 403: Permission denied.
 	ErrPermissionDenied
-	// ErrInvalidPersonaAppIdCompareHeaderMgAppId - 401: 当前登录角色中的`AppId`和header中的`mg-appid`不一致.
-	ErrInvalidPersonaAppIdCompareHeaderMgAppId
-	// ErrMissingPersonaAppId - 401: 当前登录角色中的`AppId`为空.
-	ErrMissingPersonaAppId
-	// ErrMissingPersonaUserId - 401: 当前登录角色中的`UserId`为空.
-	ErrMissingPersonaUserId
-	// ErrMissingPersonaRealmId- 401: 当前登录角色中的`RealmId`为空.
-	ErrMissingPersonaRealmId
-	// ErrIncorrectPersonaAppId - 401: 当前登录角色中的`AppId`和当前角色所属的`AppId`不一致.
-	ErrIncorrectPersonaAppId
-	// ErrIncorrectPersonaUserId - 401: 当前登录角色中的`UserId`和当前角色所属的`UserId`不一致.
-	ErrIncorrectPersonaUserId
-	// ErrIncorrectPersonaRealmId - 401: 当前登录角色中的`RealmId`和当前角色所属的`RealmId`不一致.
-	ErrIncorrectPersonaRealmId
-	// ErrIncorrectPickPersonaRealmId - 401: 当前登录角色中的`RealmId`和所选角色的`RealmId`不一致.
-	ErrIncorrectPickPersonaRealmId
-	// ErrIncorrectPickPersonaId - 401: 当前登录(选角后)角色中的`personaId`和 Params 角色中的`personaId`不一致.
-	ErrIncorrectPickPersonaId
 )
 
 // common: encode/decode errors.
