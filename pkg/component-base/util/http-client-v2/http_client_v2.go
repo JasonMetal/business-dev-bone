@@ -30,19 +30,10 @@ func init() {
 			// TLS 握手超时 (HTTPS)
 			TLSHandshakeTimeout: 5 * time.Second,
 			// 连接池核心配置
-			//// MaxIdleConns: 所有 Host 的最大空闲连接总数
-			//// 支付场景下，如果连接了多个第三方支付渠道，建议设为 500
-			//MaxIdleConns: 500,
-			//// MaxIdleConnsPerHost: 每个 Host (域名) 保持的最大空闲连接数
-			//// 默认是 2 (极其容易造成瓶颈)，支付场景下建议 100 或更多
-			//MaxIdleConnsPerHost: 100,
-			//// 空闲连接的存活时间：如果连接空闲超过 90秒，自动关闭
-			//IdleConnTimeout: 90 * time.Second,
-
 			// 🎯 关键配置：100 渠道均衡方案
-			MaxIdleConns:        6000, // 总连接池 6000
-			MaxIdleConnsPerHost: 80,   // 每渠道 80
-			IdleConnTimeout:     90 * time.Second,
+			MaxIdleConns:        6000,             // 所有 Host 的最大空闲连接总数，总连接池 6000
+			MaxIdleConnsPerHost: 80,               // 每个 Host (域名) 保持的最大空闲连接数， 每渠道 80
+			IdleConnTimeout:     90 * time.Second, // 空闲连接的存活时间：如果连接空闲超过 90秒，自动关闭
 
 			MaxConnsPerHost:       0,
 			DisableKeepAlives:     false,
