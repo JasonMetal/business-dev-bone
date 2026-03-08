@@ -116,7 +116,7 @@ func TestPostJSON_Success(t *testing.T) {
 	reqBody := TestRequest{Name: "test", Value: 123}
 	var result TestResponse
 
-	resp, err := PostJSON(ctx, nil, server.URL, reqBody, &result, nil)
+	resp, err := PostJSON(ctx, server.URL, reqBody, &result, nil)
 	if err != nil {
 		t.Fatalf("PostJSON 失败: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestPostJSON_ServerError(t *testing.T) {
 	reqBody := TestRequest{Name: "test", Value: 123}
 	var result TestResponse
 
-	resp, err := PostJSON(ctx, nil, server.URL, reqBody, &result, nil)
+	resp, err := PostJSON(ctx, server.URL, reqBody, &result, nil)
 
 	// 应该返回错误
 	if err == nil {
@@ -169,11 +169,55 @@ func TestPostJSON_Timeout(t *testing.T) {
 	var result TestResponse
 
 	// 使用 100ms 超时
-	_, err := PostJSON(ctx, nil, server.URL, reqBody, &result, nil, WithTimeout(100*time.Millisecond))
+	_, err := PostJSON(ctx, server.URL, reqBody, &result, nil, WithTimeout(100*time.Millisecond))
 
 	// 应该超时
 	if err == nil {
 		t.Error("期望超时错误，但没有错误")
+	}
+}
+
+// TestPostJSON_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestPostJSON_ResultNil(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("请求方法 = %s, 期望 POST", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	reqBody := TestRequest{Name: "no-result", Value: 0}
+
+	resp, err := PostJSON(ctx, server.URL, reqBody, nil, nil)
+	if err != nil {
+		t.Fatalf("PostJSON(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
+	}
+}
+
+// TestPostJSONRaw_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestPostJSONRaw_ResultNil(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("请求方法 = %s, 期望 POST", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	reqBody := TestRequest{Name: "no-result", Value: 0}
+
+	resp, err := PostJSONRaw(ctx, server.URL, reqBody, nil, nil)
+	if err != nil {
+		t.Fatalf("PostJSONRaw(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
 	}
 }
 
@@ -224,6 +268,27 @@ func TestGet_Success(t *testing.T) {
 	}
 }
 
+// TestGet_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestGet_ResultNil(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("请求方法 = %s, 期望 GET", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+
+	resp, err := Get(ctx, server.URL, nil, nil)
+	if err != nil {
+		t.Fatalf("Get(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
+	}
+}
+
 // ---------------------------------------------------------
 // 4. 测试 PutJSON
 // ---------------------------------------------------------
@@ -232,6 +297,18 @@ func TestPutJSON_Success(t *testing.T) {
 	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("请求方法 = %s, 期望 PUT", r.Method)
+		}
+		if !strings.Contains(r.Header.Get("Content-Type"), "application/json") {
+			t.Errorf("Content-Type = %s, 期望包含 application/json", r.Header.Get("Content-Type"))
+		}
+
+		body, _ := io.ReadAll(r.Body)
+		var req TestRequest
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Errorf("解析请求体失败: %v", err)
+		}
+		if req.Name != "update" || req.Value != 456 {
+			t.Errorf("请求数据不匹配: %+v", req)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -247,7 +324,7 @@ func TestPutJSON_Success(t *testing.T) {
 	reqBody := TestRequest{Name: "update", Value: 456}
 	var result TestResponse
 
-	resp, err := PutJSON(ctx, server.URL, reqBody, &result)
+	resp, err := PutJSON(ctx, server.URL, reqBody, &result, nil)
 	if err != nil {
 		t.Fatalf("PutJSON 失败: %v", err)
 	}
@@ -257,6 +334,109 @@ func TestPutJSON_Success(t *testing.T) {
 	}
 	if result.Message != "put success" {
 		t.Errorf("响应消息 = %s, 期望 put success", result.Message)
+	}
+}
+
+// TestPutJSON_RawBehaviorOnHTTPError 验证 4xx/5xx 不包装为 error，与 PostJSONRaw 一致
+func TestPutJSON_RawBehaviorOnHTTPError(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("请求方法 = %s, 期望 PUT", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"bad request","code":400}`))
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	reqBody := TestRequest{Name: "bad", Value: 0}
+	var result TestResponse
+
+	resp, err := PutJSON(ctx, server.URL, reqBody, &result, nil)
+	if err != nil {
+		t.Fatalf("PutJSON 不应因 4xx 返回 error，但拿到: %v", err)
+	}
+	if resp == nil {
+		t.Fatal("resp 不应为 nil")
+	}
+	if resp.StatusCode() != http.StatusBadRequest {
+		t.Errorf("状态码 = %d, 期望 400", resp.StatusCode())
+	}
+}
+
+// TestPutJSON_RequestError 验证网络错误时返回 err
+func TestPutJSON_RequestError(t *testing.T) {
+	ctx := context.Background()
+	reqBody := TestRequest{Name: "network-fail", Value: 0}
+	var result TestResponse
+
+	resp, err := PutJSON(ctx, "http://127.0.0.1:1", reqBody, &result, nil, WithTimeout(200*time.Millisecond))
+	if err == nil {
+		t.Fatal("期望网络错误，但 err 为 nil")
+	}
+	if resp != nil && resp.StatusCode() != 0 {
+		t.Errorf("网络错误时 status 应为 0（或 resp=nil），实际状态码: %d", resp.StatusCode())
+	}
+}
+
+// TestPutJSON_WithHeadersAndTimeoutOption 验证自定义 headers 与 opts
+func TestPutJSON_WithHeadersAndTimeoutOption(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("请求方法 = %s, 期望 PUT", r.Method)
+		}
+		if got := r.Header.Get("X-Test-Header"); got != "put-json-header" {
+			t.Errorf("X-Test-Header = %s, 期望 put-json-header", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"message":"ok","code":0}`))
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	reqBody := TestRequest{Name: "with-headers", Value: 1}
+	var result TestResponse
+
+	resp, err := PutJSON(
+		ctx,
+		server.URL,
+		reqBody,
+		&result,
+		map[string]string{"X-Test-Header": "put-json-header"},
+		WithTimeout(1*time.Second),
+	)
+	if err != nil {
+		t.Fatalf("PutJSON 请求失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusOK {
+		t.Errorf("状态码 = %d, 期望 200", resp.StatusCode())
+	}
+	if result.Message != "ok" || result.Code != 0 {
+		t.Errorf("响应数据不匹配: %+v", result)
+	}
+}
+
+// TestPutJSON_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestPutJSON_ResultNil(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("请求方法 = %s, 期望 PUT", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	reqBody := TestRequest{Name: "no-result", Value: 0}
+
+	resp, err := PutJSON(ctx, server.URL, reqBody, nil, nil)
+	if err != nil {
+		t.Fatalf("PutJSON(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
 	}
 }
 
@@ -298,6 +478,27 @@ func TestDelete_Success(t *testing.T) {
 	}
 	if result.Message != "delete success" {
 		t.Errorf("响应消息 = %s, 期望 delete success", result.Message)
+	}
+}
+
+// TestDelete_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestDelete_ResultNil(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("请求方法 = %s, 期望 DELETE", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+
+	resp, err := Delete(ctx, server.URL, nil, nil)
+	if err != nil {
+		t.Fatalf("Delete(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
 	}
 }
 
@@ -443,6 +644,28 @@ func TestPostForm_WithHeadersAndTimeoutOption(t *testing.T) {
 	}
 }
 
+// TestPostForm_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestPostForm_ResultNil(t *testing.T) {
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("请求方法 = %s, 期望 POST", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	formData := map[string]string{"k": "v"}
+
+	resp, err := PostForm(ctx, server.URL, formData, nil, nil)
+	if err != nil {
+		t.Fatalf("PostForm(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
+	}
+}
+
 // ---------------------------------------------------------
 // 7. 测试 PostMultipart
 // ---------------------------------------------------------
@@ -525,6 +748,37 @@ func TestPostMultipart_Success(t *testing.T) {
 	}
 	if result.Message != "upload success" {
 		t.Errorf("响应消息 = %s, 期望 upload success", result.Message)
+	}
+}
+
+// TestPostMultipart_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
+func TestPostMultipart_ResultNil(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "test-*.txt")
+	if err != nil {
+		t.Fatalf("创建临时文件失败: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+	tempFile.WriteString("test")
+	tempFile.Close()
+
+	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("请求方法 = %s, 期望 POST", r.Method)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	ctx := context.Background()
+	formData := map[string]string{"k": "v"}
+	files := map[string]string{"file": tempFile.Name()}
+
+	resp, err := PostMultipart(ctx, server.URL, formData, files, nil)
+	if err != nil {
+		t.Fatalf("PostMultipart(result=nil) 失败: %v", err)
+	}
+	if resp.StatusCode() != http.StatusNoContent {
+		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
 	}
 }
 
@@ -715,7 +969,7 @@ func BenchmarkPostJSON(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		var result TestResponse
-		_, err := PostJSON(ctx, nil, server.URL, reqBody, &result, nil)
+		_, err := PostJSON(ctx, server.URL, reqBody, &result, nil)
 		if err != nil {
 			b.Fatalf("请求失败: %v", err)
 		}
@@ -766,7 +1020,7 @@ func TestConcurrentRequests(t *testing.T) {
 		go func(index int) {
 			var result TestResponse
 			reqBody := TestRequest{Name: fmt.Sprintf("test-%d", index), Value: index}
-			_, err := PostJSON(ctx, nil, server.URL, reqBody, &result, nil)
+			_, err := PostJSON(ctx, server.URL, reqBody, &result, nil)
 			if err != nil {
 				t.Errorf("并发请求 %d 失败: %v", index, err)
 			}

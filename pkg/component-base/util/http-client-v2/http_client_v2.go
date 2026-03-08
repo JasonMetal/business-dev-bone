@@ -17,9 +17,9 @@ func init() {
 	// 1. 初始化全局 Client
 	// 使用完整的连接池配置，与 httpclient.InitTransport() 保持一致
 	globalClient = resty.New().
-		SetTimeout(10*time.Second). // 默认超时 10s
-		SetRetryCount(0).           // 默认不重试
-		SetHeader("Content-Type", "application/json").
+		SetTimeout(10 * time.Second). // 默认超时 10s
+		SetRetryCount(0).             // 默认不重试
+		//SetHeader("Content-Type", "application/json").
 		// 关键：显式配置连接池，优化支付场景下的并发性能
 		SetTransport(&http.Transport{
 			// 拨号上下文：控制建立 TCP 连接的超时时间
@@ -101,10 +101,8 @@ func handleResponse(resp *resty.Response, err error) (*resty.Response, error) {
 // ---------------------------------------------------------
 
 // PostJSON 发送 POST 请求 (JSON Body)
-func PostJSON(ctx context.Context, client *resty.Client, url string, body interface{}, result interface{}, headers map[string]string, opts ...Option) (*resty.Response, error) {
-	if client == nil {
-		client = globalClient
-	}
+func PostJSON(ctx context.Context, url string, body interface{}, result interface{}, headers map[string]string, opts ...Option) (*resty.Response, error) {
+	client := globalClient
 	// 应用可选配置（如自定义超时、重试）
 	if len(opts) > 0 {
 		client = client.Clone()
@@ -132,10 +130,8 @@ func PostJSON(ctx context.Context, client *resty.Client, url string, body interf
 // 适用于需要业务侧自行根据 StatusCode / Body 做复杂判断的场景：
 //   - err 仅表示网络层错误（超时、DNS失败、连接失败等）
 //   - 无论 2xx / 4xx / 5xx，都会返回 resp（除非网络错误导致 resp 为 nil）
-func PostJSONRaw(ctx context.Context, client *resty.Client, url string, body interface{}, result interface{}, headers map[string]string, opts ...Option) (*resty.Response, error) {
-	if client == nil {
-		client = globalClient
-	}
+func PostJSONRaw(ctx context.Context, url string, body interface{}, result interface{}, headers map[string]string, opts ...Option) (*resty.Response, error) {
+	client := globalClient
 	// 应用可选配置（如自定义超时、重试）
 	if len(opts) > 0 {
 		client = client.Clone()
@@ -144,12 +140,11 @@ func PostJSONRaw(ctx context.Context, client *resty.Client, url string, body int
 		}
 	}
 
-	req := client.R().SetContext(ctx).SetBody(body)
-	if result != nil {
-		req = req.SetResult(result)
-	}
-
-	req.SetHeader("Content-Type", "application/json")
+	req := client.R().
+		SetContext(ctx).
+		SetBody(body).
+		SetResult(result).
+		SetHeader("Content-Type", "application/json")
 
 	if len(headers) > 0 {
 		req.SetHeaders(headers)
@@ -160,17 +155,33 @@ func PostJSONRaw(ctx context.Context, client *resty.Client, url string, body int
 }
 
 // PutJSON 发送 PUT 请求 (通常用于更新)
-func PutJSON(ctx context.Context, url string, body interface{}, result interface{}, opts ...Option) (*resty.Response, error) {
-	client := getClient(opts)
-	resp, err := client.R().
+// 与 PostJSONRaw 语义一致：不调用 handleResponse，不检查 StatusCode
+//   - err 仅表示网络层错误（超时、DNS失败、连接失败等）
+//   - 无论 2xx / 4xx / 5xx，都会返回 resp（除非网络错误导致 resp 为 nil）
+func PutJSON(ctx context.Context, url string, body interface{}, result interface{}, headers map[string]string, opts ...Option) (*resty.Response, error) {
+	client := globalClient
+	if len(opts) > 0 {
+		client = client.Clone()
+		for _, opt := range opts {
+			opt(client)
+		}
+	}
+
+	req := client.R().
 		SetContext(ctx).
 		SetBody(body).
 		SetResult(result).
-		Put(url)
-	return handleResponse(resp, err)
+		SetHeader("Content-Type", "application/json")
+
+	if len(headers) > 0 {
+		req.SetHeaders(headers)
+	}
+
+	return req.Put(url)
 }
 
 // Get 发送 GET 请求
+// 不调用 handleResponse，不检查 StatusCode
 func Get(ctx context.Context, url string, params map[string]string, result interface{}, opts ...Option) (*resty.Response, error) {
 	client := getClient(opts)
 	resp, err := client.R().
@@ -178,10 +189,11 @@ func Get(ctx context.Context, url string, params map[string]string, result inter
 		SetQueryParams(params).
 		SetResult(result).
 		Get(url)
-	return handleResponse(resp, err)
+	return resp, err
 }
 
 // Delete 发送 DELETE 请求
+// 不调用 handleResponse，不检查 StatusCode
 func Delete(ctx context.Context, url string, params map[string]string, result interface{}, opts ...Option) (*resty.Response, error) {
 	client := getClient(opts)
 	req := client.R().
@@ -194,27 +206,19 @@ func Delete(ctx context.Context, url string, params map[string]string, result in
 	}
 
 	resp, err := req.Delete(url)
-	return handleResponse(resp, err)
+	return resp, err
 }
 
 // PostForm 发送表单请求 (application/x-www-form-urlencoded)
 // 注意：formData 通常是 map[string]string
 func PostForm(ctx context.Context, url string, formData map[string]string, result interface{}, headers map[string]string, opts ...Option) (*resty.Response, error) {
 	client := globalClient
-	// 应用可选配置（如自定义超时、重试）
-	if len(opts) > 0 {
-		client = client.Clone()
-		for _, opt := range opts {
-			opt(client)
-		}
-	}
 
-	req := client.R().SetContext(ctx).SetFormData(formData)
-	if result != nil {
-		req = req.SetResult(result)
-	}
-
-	req.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+	req := client.R().
+		SetContext(ctx).
+		SetFormData(formData).
+		SetResult(result).
+		SetHeader("Content-Type", "application/x-www-form-urlencoded")
 
 	if len(headers) > 0 {
 		req.SetHeaders(headers)
@@ -226,7 +230,8 @@ func PostForm(ctx context.Context, url string, formData map[string]string, resul
 }
 
 // PostMultipart 发送文件上传请求 (multipart/form-data)
-// files 参数结构: map["表单字段名"]"文件路径"
+// files 参数结构：map["表单字段名"]"文件路径"
+// 不调用 handleResponse，不检查 StatusCode
 func PostMultipart(ctx context.Context, url string, formData map[string]string, files map[string]string, result interface{}, opts ...Option) (*resty.Response, error) {
 	client := getClient(opts)
 	req := client.R().
@@ -240,7 +245,7 @@ func PostMultipart(ctx context.Context, url string, formData map[string]string, 
 	}
 
 	resp, err := req.Post(url)
-	return handleResponse(resp, err)
+	return resp, err
 }
 
 // ---------------------------------------------------------
