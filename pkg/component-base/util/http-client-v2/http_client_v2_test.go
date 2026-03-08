@@ -130,32 +130,6 @@ func TestPostJSON_Success(t *testing.T) {
 	}
 }
 
-func TestPostJSON_ServerError(t *testing.T) {
-	// 创建返回错误的服务器
-	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal Server Error"))
-	})
-	defer server.Close()
-
-	ctx := context.Background()
-	reqBody := TestRequest{Name: "test", Value: 123}
-	var result TestResponse
-
-	resp, err := PostJSON(ctx, server.URL, reqBody, &result, nil)
-
-	// 应该返回错误
-	if err == nil {
-		t.Error("期望返回错误，但没有错误")
-	}
-	if resp == nil {
-		t.Error("resp 不应该为 nil")
-	}
-	if resp != nil && resp.StatusCode() != http.StatusInternalServerError {
-		t.Errorf("状态码 = %d, 期望 500", resp.StatusCode())
-	}
-}
-
 func TestPostJSON_Timeout(t *testing.T) {
 	// 创建慢速服务器
 	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
@@ -199,25 +173,30 @@ func TestPostJSON_ResultNil(t *testing.T) {
 	}
 }
 
-// TestPostJSONRaw_ResultNil 验证链式写法 SetResult(nil) 不判空时仍可正常请求
-func TestPostJSONRaw_ResultNil(t *testing.T) {
+// TestPostJSON_RawBehaviorOnHTTPError 验证 4xx/5xx 不包装为 error
+func TestPostJSON_RawBehaviorOnHTTPError(t *testing.T) {
+	// 创建返回错误的服务器
 	server := createTestServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("请求方法 = %s, 期望 POST", r.Method)
-		}
-		w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal Server Error"))
 	})
 	defer server.Close()
 
 	ctx := context.Background()
-	reqBody := TestRequest{Name: "no-result", Value: 0}
+	reqBody := TestRequest{Name: "test", Value: 123}
+	var result TestResponse
 
-	resp, err := PostJSONRaw(ctx, server.URL, reqBody, nil, nil)
+	resp, err := PostJSON(ctx, server.URL, reqBody, &result, nil)
+
+	// raw 语义：不应因 4xx/5xx 返回 error
 	if err != nil {
-		t.Fatalf("PostJSONRaw(result=nil) 失败: %v", err)
+		t.Fatalf("PostJSON 不应因 4xx/5xx 返回 error，但拿到：%v", err)
 	}
-	if resp.StatusCode() != http.StatusNoContent {
-		t.Errorf("状态码 = %d, 期望 204", resp.StatusCode())
+	if resp == nil {
+		t.Error("resp 不应该为 nil")
+	}
+	if resp != nil && resp.StatusCode() != http.StatusInternalServerError {
+		t.Errorf("状态码 = %d, 期望 500", resp.StatusCode())
 	}
 }
 
@@ -829,7 +808,6 @@ func TestWithRetry_Option(t *testing.T) {
 	resp, err := Get(ctx, server.URL, nil, &result, WithRetry(3))
 
 	// 由于 resty 的重试机制，这里的行为可能不同
-	// 注意：handleResponse 会对 StatusCode > 399 返回错误
 	// resty 的 SetRetryCount 需要配合 AddRetryCondition 使用
 	// 这里主要测试选项是否生效
 	if resp != nil {
