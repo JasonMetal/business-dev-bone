@@ -3,13 +3,51 @@ package storage
 import (
 	"context"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
 	"business-dev-bone/pkg/component-base/util/idutil"
+	"github.com/go-redsync/redsync/v4"
 )
 
 const testKeyPrefix = "test:redis_cluster:"
+
+// TestExpiryWithJitter tests expiryWithJitter (no Redis required).
+func TestExpiryWithJitter(t *testing.T) {
+	t.Run("zero returns zero", func(t *testing.T) {
+		got := expiryWithJitter(0)
+		if got != 0 {
+			t.Errorf("expiryWithJitter(0) = %v, want 0", got)
+		}
+	})
+
+	t.Run("negative returns unchanged", func(t *testing.T) {
+		d := -1 * time.Second
+		got := expiryWithJitter(d)
+		if got != d {
+			t.Errorf("expiryWithJitter(%v) = %v, want %v", d, got, d)
+		}
+	})
+
+	t.Run("result in [expiry, expiry*(1+expiryJitterRatio)]", func(t *testing.T) {
+		expiry := 5 * time.Second
+		minExpiry := expiry
+		maxExpiry := time.Duration(float64(expiry) * (1 + expiryJitterRatio))
+
+		seen := make(map[time.Duration]bool)
+		for i := 0; i < 100; i++ {
+			got := expiryWithJitter(expiry)
+			if got < minExpiry || got > maxExpiry {
+				t.Errorf("expiryWithJitter(%v) = %v, want in [%v, %v]", expiry, got, minExpiry, maxExpiry)
+			}
+			seen[got] = true
+		}
+		if len(seen) < 2 {
+			t.Errorf("expected jitter variation, got %d distinct values in 100 runs", len(seen))
+		}
+	})
+}
 
 // TestConfigValidate tests Config.Validate (no Redis required).
 func TestConfigValidate(t *testing.T) {
@@ -217,5 +255,35 @@ func TestRedisCluster_MutexLock(t *testing.T) {
 	ok, err := mutex.Unlock()
 	if !ok || err != nil {
 		t.Errorf("MutexLock.Unlock: ok=%v err=%v", ok, err)
+	}
+}
+
+// getMutexExpiry uses reflection to read redsync.Mutex.expiry (unexported).
+func getMutexExpiry(m *redsync.Mutex) time.Duration {
+	v := reflect.ValueOf(m).Elem()
+	f := v.FieldByName("expiry")
+	return time.Duration(f.Int())
+}
+
+func TestRedisCluster_MutexLock_ExpiryHasJitter(t *testing.T) {
+	setupRedisForTest(t)
+	ctx := context.Background()
+	expiry := 5 * time.Second
+	minExpiry := expiry
+	maxExpiry := time.Duration(float64(expiry) * (1 + expiryJitterRatio))
+
+	seen := make(map[time.Duration]bool)
+	for i := 0; i < 50; i++ {
+		lockKey := testKeyPrefix + "mutex_jitter:" + idutil.NewNoCylinderLineID()
+		threadID := idutil.NewNoCylinderLineID()
+		mutex := Redis.MutexLock(ctx, lockKey, threadID, expiry)
+		got := getMutexExpiry(mutex)
+		if got < minExpiry || got > maxExpiry {
+			t.Errorf("MutexLock expiry = %v, want in [%v, %v]", got, minExpiry, maxExpiry)
+		}
+		seen[got] = true
+	}
+	if len(seen) < 2 {
+		t.Errorf("expected jitter variation, got %d distinct expiry values in 50 runs", len(seen))
 	}
 }

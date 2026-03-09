@@ -2088,7 +2088,8 @@ const (
 const (
 	maxAttempts       = 10
 	baseDelay         = 10 * time.Millisecond
-	maxJitterRatio    = 0.3 // 抖动比例上限
+	maxJitterRatio    = 0.3 // TryLock 重试间隔抖动比例
+	expiryJitterRatio = 0.2 // MutexLock 过期时间抖动比例，与 TryLock 同款：base + [0, ratio*base]
 	lockChannelPrefix = "{%s}:lock:notify"
 	lockScript        = `if redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2]) then
         return 1
@@ -2143,6 +2144,19 @@ func (r *RedisCluster) Unlock(cxt context.Context, key, threadId string) error {
 	return nil
 }
 
+// expiryWithJitter 对 expiry 施加动态抖动，与 TryLock 同款公式：base + random(0, ratio)*base
+// 公式: expiry + rand.Float64() * expiryJitterRatio * expiry，结果在 [expiry, expiry*(1+ratio)]
+func expiryWithJitter(expiry time.Duration) time.Duration {
+	if expiry <= 0 {
+		return expiry
+	}
+	base := float64(expiry)
+	src := rand.NewSource(time.Now().UnixNano())
+	ran := rand.New(src)
+	jitter := time.Duration(ran.Float64() * expiryJitterRatio * base)
+	return expiry + jitter
+}
+
 func (r *RedisCluster) MutexLock(ctx context.Context, key, threadId string, expiry time.Duration) *redsync.Mutex {
 	// Create a pool with go-redis (or redigo) which is the pool redisync will
 	// use while communicating with Redis. This can also be any pool that
@@ -2155,10 +2169,13 @@ func (r *RedisCluster) MutexLock(ctx context.Context, key, threadId string, expi
 	// lock.
 	rs := redsync.New(pool)
 
+	// 对 expiry 施加动态抖动，避免大量锁同时过期
+	exp := expiryWithJitter(expiry)
+
 	// Obtain a new mutex by using the same name for all instances wanting the
 	// same lock.
 	log.L(ctx).Infof("--> MutexLock key：%+v", key)
-	mutex := rs.NewMutex(key, redsync.WithExpiry(expiry))
+	mutex := rs.NewMutex(key, redsync.WithExpiry(exp))
 	log.L(ctx).Infof("--> MutexLock start：%+v", mutex)
 	return mutex
 }
