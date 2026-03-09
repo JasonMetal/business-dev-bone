@@ -51,14 +51,14 @@ type SecureServingInfo struct {
 	CertKey     CertKey
 }
 
-// Address join host IP address and host port number into a address string, like: 0.0.0.0:8443.
-func (s *SecureServingInfo) Address() string {
+// Addrs join host IP address and host port number into a address string, like: 0.0.0.0:8443.
+func (s *SecureServingInfo) Addrs() string {
 	return net.JoinHostPort(s.BindAddress, strconv.Itoa(s.BindPort))
 }
 
 // InsecureServingInfo holds configuration of the insecure http server.
 type InsecureServingInfo struct {
-	Address string
+	Addrs string
 }
 
 // JwtInfo defines jwt fields used to create jwt authentication middleware.

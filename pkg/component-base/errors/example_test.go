@@ -17,7 +17,7 @@ func ExampleNew_printf() {
 
 	// Example output:
 	// whoops
-	// business-dev-bone/pkg/errors_test.ExampleNew_printf
+	//business-dev-bone/pkg/errors_test.ExampleNew_printf
 	//         /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:17
 	// testing.runExample
 	//         /home/dfc/go/src/testing/example.go:114
@@ -56,7 +56,7 @@ func ExampleWithStack_printf() {
 
 	// Example Output:
 	// whoops
-	// business-dev-bone/pkg/errors_test.ExampleWithStack_printf
+	//business-dev-bone/pkg/errors_test.ExampleWithStack_printf
 	//         /home/fabstu/go/src/business-dev-bone/pkg/errors/example_test.go:55
 	// testing.runExample
 	//         /usr/lib/go/src/testing/example.go:114
@@ -70,7 +70,7 @@ func ExampleWithStack_printf() {
 	//         /usr/lib/go/src/runtime/proc.go:183
 	// runtime.goexit
 	//         /usr/lib/go/src/runtime/asm_amd64.s:2086
-	// business-dev-bone/pkg/errors_test.ExampleWithStack_printf
+	//business-dev-bone/pkg/errors_test.ExampleWithStack_printf
 	//         /home/fabstu/go/src/business-dev-bone/pkg/errors/example_test.go:56
 	// testing.runExample
 	//         /usr/lib/go/src/testing/example.go:114
@@ -116,9 +116,9 @@ func ExampleWrap_extended() {
 
 	// Example output:
 	// error
-	// business-dev-bone/pkg/errors_test.fn
+	//business-dev-bone/pkg/errors_test.fn
 	//         /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:47
-	// business-dev-bone/pkg/errors_test.ExampleCause_printf
+	//business-dev-bone/pkg/errors_test.ExampleCause_printf
 	//         /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:63
 	// testing.runExample
 	//         /home/dfc/go/src/testing/example.go:114
@@ -132,11 +132,11 @@ func ExampleWrap_extended() {
 	//         /home/dfc/go/src/runtime/proc.go:183
 	// runtime.goexit
 	//         /home/dfc/go/src/runtime/asm_amd64.s:2059
-	// business-dev-bone/pkg/errors_test.fn
+	//business-dev-bone/pkg/errors_test.fn
 	// 	  /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:48: inner
-	// business-dev-bone/pkg/errors_test.fn
+	//business-dev-bone/pkg/errors_test.fn
 	//        /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:49: middle
-	// business-dev-bone/pkg/errors_test.fn
+	//business-dev-bone/pkg/errors_test.fn
 	//      /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:50: outer
 }
 
@@ -154,7 +154,7 @@ func ExampleErrorf_extended() {
 
 	// Example output:
 	// whoops: foo
-	// business-dev-bone/pkg/errors_test.ExampleErrorf
+	//business-dev-bone/pkg/errors_test.ExampleErrorf
 	//         /home/dfc/src/business-dev-bone/pkg/errors/example_test.go:101
 	// testing.runExample
 	//         /home/dfc/go/src/testing/example.go:114
@@ -184,9 +184,9 @@ func Example_stackTrace() {
 	fmt.Printf("%+v", st[0:2]) // top two frames
 
 	// Example output:
-	// business-dev-bone/pkg/errors_test.fn
+	//business-dev-bone/pkg/errors_test.fn
 	//	/home/dfc/src/business-dev-bone/pkg/errors/example_test.go:47
-	// business-dev-bone/pkg/errors_test.Example_stackTrace
+	//business-dev-bone/pkg/errors_test.Example_stackTrace
 	//	/home/dfc/src/business-dev-bone/pkg/errors/example_test.go:127
 }
 

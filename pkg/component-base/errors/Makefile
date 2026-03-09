@@ -1,4 +1,4 @@
-PKGS := business-dev-bone/pkg/errors
+PKGS :=business-dev-bone/pkg/errors
 SRCDIRS := $(shell go list -f '{{.Dir}}' $(PKGS))
 GO := go
 

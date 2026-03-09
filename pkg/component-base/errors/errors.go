@@ -24,7 +24,9 @@
 //
 // If additional control is required, the errors.WithStack and
 // errors.WithMessage functions destructure errors.Wrap into its component
-// operations: annotating an error with a stack trace and with a message,
+//
+//	business-dev-bone: annotating an error with a stack trace and with a message,
+//
 // respectively.
 //
 // # Retrieving the cause of an error

@@ -123,7 +123,7 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 func (s *GenericAPIServer) Run() error {
 	// For scalability, use custom HTTP configuration mode here
 	s.insecureServer = &http.Server{
-		Addr:           s.InsecureServingInfo.Address,
+		Addr:           s.InsecureServingInfo.Addrs,
 		Handler:        s,
 		ReadTimeout:    60 * time.Second,
 		WriteTimeout:   60 * time.Second,
@@ -132,7 +132,7 @@ func (s *GenericAPIServer) Run() error {
 
 	// For scalability, use custom HTTP configuration mode here
 	s.secureServer = &http.Server{
-		Addr:           s.SecureServingInfo.Address(),
+		Addr:           s.SecureServingInfo.Addrs(),
 		Handler:        s,
 		ReadTimeout:    60 * time.Second,
 		WriteTimeout:   60 * time.Second,
@@ -144,7 +144,7 @@ func (s *GenericAPIServer) Run() error {
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
 	eg.Go(func() error {
-		log.Infof("Start to listening the incoming requests on http address: %s", s.InsecureServingInfo.Address)
+		log.Infof("Start to listening the incoming requests on http address: %s", s.InsecureServingInfo.Addrs)
 
 		if err := s.insecureServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err.Error())
@@ -152,7 +152,7 @@ func (s *GenericAPIServer) Run() error {
 			return err
 		}
 
-		log.Infof("Server on %s stopped", s.InsecureServingInfo.Address)
+		log.Infof("Server on %s stopped", s.InsecureServingInfo.Addrs)
 
 		return nil
 	})
@@ -163,7 +163,7 @@ func (s *GenericAPIServer) Run() error {
 			return nil
 		}
 
-		log.Infof("Start to listening the incoming requests on https address: %s", s.SecureServingInfo.Address())
+		log.Infof("Start to listening the incoming requests on https address: %s", s.SecureServingInfo.Addrs())
 
 		if err := s.secureServer.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatal(err.Error())
@@ -171,7 +171,7 @@ func (s *GenericAPIServer) Run() error {
 			return err
 		}
 
-		log.Infof("Server on %s stopped", s.SecureServingInfo.Address())
+		log.Infof("Server on %s stopped", s.SecureServingInfo.Addrs())
 
 		return nil
 	})
@@ -210,9 +210,9 @@ func (s *GenericAPIServer) Close() {
 
 // ping pings the http server to make sure the router is working.
 func (s *GenericAPIServer) ping(ctx context.Context) error {
-	url := fmt.Sprintf("http://%s/healthz", s.InsecureServingInfo.Address)
-	if strings.Contains(s.InsecureServingInfo.Address, "0.0.0.0") {
-		url = fmt.Sprintf("http://127.0.0.1:%s/healthz", strings.Split(s.InsecureServingInfo.Address, ":")[1])
+	url := fmt.Sprintf("http://%s/healthz", s.InsecureServingInfo.Addrs)
+	if strings.Contains(s.InsecureServingInfo.Addrs, "0.0.0.0") {
+		url = fmt.Sprintf("http://127.0.0.1:%s/healthz", strings.Split(s.InsecureServingInfo.Addrs, ":")[1])
 	}
 
 	for {

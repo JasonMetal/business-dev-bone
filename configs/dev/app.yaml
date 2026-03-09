@@ -27,3 +27,18 @@ log:
   disable-stacktrace: false # 是否再panic及以上级别禁止打印堆栈信息
   output-paths: ["stdout"]
   error-output-paths: ["stderr"]
+# Redis 配置
+redis:
+  host: 127.0.0.1 # redis 地址，默认 127.0.0.1:6379
+  port: 6379 # redis 端口，默认 6379
+  password:  # redis 密码
+  # addrs: 10.124.129.35:6381,10.124.129.36:6381,10.124.129.37:6381,10.124.129.35:6382,10.124.129.36:6382,10.124.129.37:6382
+  #master-name: # redis 集群 master 名称
+  #username: # redis 登录用户名
+  #database: # redis 数据库
+  #optimisation-max-idle:  # redis 连接池中的最大空闲连接数
+  #optimisation-max-active: # 最大活跃连接数
+  #timeout: # 连接 redis 时的超时时间
+  #enable-cluster: true # 是否开启集群模式
+  #use-ssl: # 是否启用 TLS
+  #ssl-insecure-skip-verify: # 当连接 redis 时允许使用自签名证书

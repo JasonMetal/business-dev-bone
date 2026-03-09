@@ -5,7 +5,7 @@ Package shutdown Providing shutdown callbacks for graceful app shutdown
 
 To install run:
 
-	go get business-dev-bone/pkg/component-base/shutdown
+	go getbusiness-dev-bone/pkg/component-base/shutdown
 
 # Example - posix signals
 

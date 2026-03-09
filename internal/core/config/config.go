@@ -1,6 +1,8 @@
 package config
 
-import "business-dev-bone/internal/core/options"
+import (
+	"business-dev-bone/internal/core/options"
+)
 
 // Config 运行期配置，仅依赖 Options，无业务字段
 type Config struct {

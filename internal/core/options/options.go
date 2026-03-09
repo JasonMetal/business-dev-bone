@@ -3,8 +3,8 @@ package options
 import (
 	"encoding/json"
 
-	genericoptions "business-dev-bone/internal/framework/options"
-	"business-dev-bone/internal/framework/server"
+	genericoptions "business-dev-bone/internal/pkg/options"
+	"business-dev-bone/internal/pkg/server"
 	cliflag "business-dev-bone/pkg/component-base/cli/flag"
 	"business-dev-bone/pkg/component-base/log"
 )
@@ -17,6 +17,10 @@ type Options struct {
 	SecureServing           *genericoptions.SecureServingOptions   `json:"secure"   mapstructure:"secure"`
 	Log                     *log.Options                           `json:"log"      mapstructure:"log"`
 	FeatureOptions          *genericoptions.FeatureOptions         `json:"feature"  mapstructure:"feature"`
+	JwtOptions              *genericoptions.JwtOptions             `json:"jwt"      mapstructure:"jwt"`
+	MySQLOptions            *genericoptions.MySQLOptions           `json:"mysql"    mapstructure:"mysql"`
+	RedisOptions            *genericoptions.RedisOptions           `json:"redis"    mapstructure:"redis"`
+	K8sOptions              *genericoptions.K8sOptions             `json:"k8s"      mapstructure:"k8s"`
 }
 
 // NewOptions 默认值：HTTP 8080，HTTPS 关闭，适合做新应用起点
@@ -29,6 +33,10 @@ func NewOptions() *Options {
 		GenericServerRunOptions: genericoptions.NewServerRunOptions(),
 		InsecureServing:         genericoptions.NewInsecureServingOptions(),
 		SecureServing:           sec,
+		MySQLOptions:            genericoptions.NewMySQLOptions(),
+		RedisOptions:            genericoptions.NewRedisOptions(),
+		JwtOptions:              genericoptions.NewJwtOptions(),
+		K8sOptions:              genericoptions.NewK8sOptions(),
 		Log:                     log.NewOptions(),
 		FeatureOptions:          genericoptions.NewFeatureOptions(),
 	}

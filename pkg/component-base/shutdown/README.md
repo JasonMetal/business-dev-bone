@@ -13,7 +13,7 @@ We decided to use the same callback pattern in case of handling POSIX signals.
 ## Installation
 
 ```
-go get business-dev-bone/pkg/component-base/shutdown
+go getbusiness-dev-bone/pkg/component-base/shutdown
 ```
 
 ## Documentation

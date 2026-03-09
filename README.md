@@ -1,4 +1,4 @@
-# business-dev-bone
+#business-dev-bone
 
 **纯基础结构**：无业务、无 MySQL/Redis/K8s，只保留 HTTP 服务、配置、优雅关闭和最小路由，用来**在此基础上开发别的应用**。
 
@@ -41,7 +41,7 @@ business-dev-bone/
 **独立构建**：
 
 ```bash
-cd business-dev-bone
+cdbusiness-dev-bone
 go mod tidy
 go build -o server.exe ./cmd/server
 ./server.exe -c configs/dev/app.yaml
@@ -49,11 +49,11 @@ go build -o server.exe ./cmd/server
 
 或按环境读配置：`./server.exe -e dev`（读 `configs/dev/app.yaml`）。
 
-**在平台仓库内构建**（若 business-dev-bone 放在平台下）：
+**在平台仓库内构建**（若business-dev-bone 放在平台下）：
 
 ```bash
 cd platform
-go build -o business-dev-bone/server.exe ./business-dev-bone/cmd/server
+go build -obusiness-dev-bone/server.exe ./business-dev-bone/cmd/server
 ```
 
 默认 HTTP 端口 8888，提供 `/healthz`、`/version`、`/ping`、`/metrics`、`/debug/pprof`。
